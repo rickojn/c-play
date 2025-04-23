@@ -15,7 +15,7 @@ void matmul(const float* A, const float *B, float * C, size_t rows_C, size_t col
 }
 
 
-void tiled_matmul(const float* A, const float *B, float * C, size_t rows_C, size_t cols_C, size_t rows_B_cols_A, size_t tile_size){
+void tiled_matmul_cp(const float* A, const float *B, float * C, size_t rows_C, size_t cols_C, size_t rows_B_cols_A, size_t tile_size){
     for (size_t i = 0; i < rows_C; i += tile_size){
         for (size_t j = 0; j < cols_C; j += tile_size){
             for (size_t k = 0; k < rows_B_cols_A; k += tile_size){
@@ -30,6 +30,25 @@ void tiled_matmul(const float* A, const float *B, float * C, size_t rows_C, size
         }
     }
  
+}
+
+
+void tiled_matmul_me(const float* A, const float *B, float * C, size_t rows_C, size_t cols_C, size_t rows_B_cols_A, size_t tile_size){
+    for (size_t i = 0; i < rows_C; i += tile_size){
+        for (size_t j = 0; j < cols_C; j += tile_size){
+            for (size_t k = 0; k < rows_B_cols_A; k += tile_size){
+                for (size_t ii = i; ii < i + tile_size && ii < rows_C; ii++){
+                    for (size_t jj = j; jj < j + tile_size && jj < cols_C; jj++){
+                        float sum = 0;
+                        for (size_t kk = k; kk < k + tile_size && kk < rows_B_cols_A; kk++){
+                            sum += A[ii * rows_C + kk] * B[jj *cols_C + kk]; 
+                        }
+                        C[ii * rows_C + jj] += sum;
+                    }
+                }
+            }
+        }
+    }
 }
 
 int main() {
@@ -68,7 +87,7 @@ int main() {
     float BT[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
     float CT[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     
-    tiled_matmul(&AT, &BT, &CT, 4, 4, 4, 2);
+    tiled_matmul_cp(&AT, &BT, &CT, 4, 4, 4, 2);
 
     for (size_t i = 0; i < 4; i++)
     {
@@ -78,6 +97,36 @@ int main() {
         }
         printf("\n");
     }
+
+
+    float *A_large = malloc(1024 * 1024 * sizeof(float));
+    float *B_large = malloc(1024 * 1024 * sizeof(float));
+    float *C_large = malloc(1024 * 1024 * sizeof(float));
+    for (size_t i = 0; i < 1024 * 1024; i++){
+        A_large[i] = rand() % 100;
+        B_large[i] = rand() % 100;
+        C_large[i] = 0;
+    }
+    clock_t start = clock();
+    matmul(A_large, B_large, C_large, 1024, 1024, 1024);
+    clock_t end = clock();
+    double time_spent = (double)(end - start) / CLOCKS_PER_SEC;
+    printf("Time spent on matmul: %f seconds\n", time_spent);
+    start = clock();
+    tiled_matmul_cp(A_large, B_large, C_large, 1024, 1024, 1024, 256);
+    end = clock();
+    time_spent = (double)(end - start) / CLOCKS_PER_SEC;
+    printf("Time spent on tiled_matmul_cp: %f seconds\n", time_spent);
+
+    start = clock();
+    tiled_matmul_me(A_large, B_large, C_large, 1024, 1024, 1024, 256);
+    end = clock();
+    time_spent = (double)(end - start) / CLOCKS_PER_SEC;
+    printf("Time spent on tiled_matmul_me: %f seconds\n", time_spent);
+    free(A_large);
+    free(B_large);
+    free(C_large);
+
 }
 
 
