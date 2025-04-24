@@ -69,11 +69,20 @@ void tiled_matmul_me(const float* A, const float *B, float * C, size_t rows_C, s
                         }
                         size_t offset_C = idx_tile_C_row * rows_C + idx_tile_C_col;
                         C[offset_C] += dot_product;
-                        printf("dot product added to C[%zu][%zu] to give %f\n",idx_tile_C_row, idx_tile_C_col, C[offset_C]);
                     }
                 }
             }
         }
+    }
+}
+
+
+void initialise_large_matrices(float *A_large, float * B_large, float * C_large){
+    srand(42);
+    for (size_t i = 0; i < 1024 * 1024; i++){
+        A_large[i] = rand() % 100;
+        B_large[i] = rand() % 100;
+        C_large[i] = 0.0;
     }
 }
 
@@ -146,49 +155,52 @@ int main() {
     }
     
     
-    exit(0);
+    // exit(0);
 
-    float *A_large = malloc(1024 * 1024 * sizeof(float));
-    float *B_large = malloc(1024 * 1024 * sizeof(float));
-    float *C_large = malloc(1024 * 1024 * sizeof(float));
-    for (size_t i = 0; i < 1024 * 1024; i++){
-        A_large[i] = rand() % 100;
-        B_large[i] = rand() % 100;
-        C_large[i] = 0;
-    }
 
     printf("executing matmul now ...\n");
+    float * LA = malloc(1024 * 1024 * sizeof(float));
+    float * LB = malloc(1024 * 1024 * sizeof(float));
+    float * LC = malloc(1024 * 1024 * sizeof(float));
+    initialise_large_matrices(LA, LB, LC);
+
     clock_t start = clock();
-    matmul(A_large, B_large, C_large, 1024, 1024, 1024);
+    matmul(LB, LB, LC, 1024, 1024, 1024);
     clock_t end = clock();
     double time_spent = (double)(end - start) / CLOCKS_PER_SEC;
     printf("Time spent on matmul: %f seconds\n", time_spent);
+
+
     printf("executing matmulcp now ...\n");
+    initialise_large_matrices(LA, LB, LC);
     start = clock();
-    tiled_matmul_cp(A_large, B_large, C_large, 1024, 1024, 1024, 256);
+    tiled_matmul_cp(LA, LB, LC, 1024, 1024, 1024, 256);
     end = clock();
     time_spent = (double)(end - start) / CLOCKS_PER_SEC;
     printf("Time spent on tiled_matmul_cp: %f seconds\n", time_spent);
     
     printf("executing matmulcp2 now ...\n");
+    initialise_large_matrices(LA, LB, LC);
     start = clock();
-    tiled_matmul_cp2(A_large, B_large, C_large, 1024, 1024, 1024, 256);
+    tiled_matmul_cp2(LA, LB, LC, 1024, 1024, 1024, 256);
     end = clock();
     time_spent = (double)(end - start) / CLOCKS_PER_SEC;
     printf("Time spent on tiled_matmul_cp2: %f seconds\n", time_spent);
-    printf("executing matmulme now ...\n");
 
+
+    printf("executing matmulme now ...\n");
+    initialise_large_matrices(LA, LB, LC);
     start = clock();
-    tiled_matmul_me(A_large, B_large, C_large, 1024, 1024, 1024, 256);
+    tiled_matmul_me(LA, LB, LC, 1024, 1024, 1024, 256);
     end = clock();
     time_spent = (double)(end - start) / CLOCKS_PER_SEC;
     printf("Time spent on tiled_matmul_me: %f seconds\n", time_spent);
 
 
 
-    free(A_large);
-    free(B_large);
-    free(C_large);
+    free(LA);
+    free(LB);
+    free(LC);
 
 }
 
