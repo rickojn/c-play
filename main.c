@@ -4,6 +4,10 @@
 
 
 
+size_t min(size_t a, size_t b){
+    return a < b ? a : b;
+}
+
 void matmul(const float* A, const float *B, float * C, size_t rows_C, size_t cols_C, size_t rows_B_cols_A){
     for (size_t i = 0; i < rows_C; i++ ){
         for (size_t j = 0; j < cols_C; j++){
@@ -33,7 +37,7 @@ void tiled_matmul_cp(const float* A, const float *B, float * C, size_t rows_C, s
 }
 
 
-void tiled_matmul_me(const float* A, const float *B, float * C, size_t rows_C, size_t cols_C, size_t rows_B_cols_A, size_t tile_size){
+void tiled_matmul_cp2(const float* A, const float *B, float * C, size_t rows_C, size_t cols_C, size_t rows_B_cols_A, size_t tile_size){
     for (size_t i = 0; i < rows_C; i += tile_size){
         for (size_t j = 0; j < cols_C; j += tile_size){
             for (size_t k = 0; k < rows_B_cols_A; k += tile_size){
@@ -50,6 +54,29 @@ void tiled_matmul_me(const float* A, const float *B, float * C, size_t rows_C, s
         }
     }
 }
+
+void tiled_matmul_me(const float* A, const float *B, float * C, size_t rows_C, size_t cols_C, size_t rows_B_cols_A, size_t tile_size){
+    for (size_t idx_row_C = 0; idx_row_C < rows_C; idx_row_C += tile_size){
+        for (size_t idx_col_C = 0; idx_col_C < cols_C; idx_col_C += tile_size){
+            for (size_t idx_rowB_colA = 0; idx_rowB_colA < rows_B_cols_A; idx_rowB_colA += tile_size){
+                for (size_t idx_tile_C_row = idx_row_C; idx_tile_C_row < min(idx_row_C + tile_size, rows_C) ; idx_tile_C_row++){
+                    for (size_t idx_tile_C_col = idx_col_C; idx_tile_C_col < min(idx_col_C + tile_size, cols_C); idx_tile_C_col++){
+                        float dot_product = 0.0;
+                        for (size_t idx_tile_rowB_colA = idx_rowB_colA; idx_tile_rowB_colA < min(idx_tile_rowB_colA + tile_size, rows_B_cols_A); idx_tile_rowB_colA++){
+                            size_t offset_A = idx_tile_C_row * rows_B_cols_A + idx_tile_rowB_colA;
+                            size_t offset_B = idx_tile_C_col * rows_B_cols_A + idx_tile_rowB_colA;
+                            dot_product += A[offset_A] * B[offset_B];
+                        }
+                        size_t offset_C = idx_tile_C_row * cols_C + idx_tile_C_col;
+                        C[offset_C] += dot_product;
+                    }
+                }
+            }
+        }
+    }
+}
+
+
 
 int main() {
     printf("matmul\n");
@@ -81,22 +108,41 @@ int main() {
     }
 
     printf("\n");
-    printf("tiled_matmul_me\n");
+    printf("tiled_matmul_cp2\n");
     
     float AT[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
     float BT[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
     float CT[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     
-    tiled_matmul_me(AT, BT, CT, 4, 4, 4, 2);
+    tiled_matmul_cp2(AT, BT, CT, 4, 4, 4, 2);
 
     for (size_t i = 0; i < 4; i++)
     {
         printf("\n");
         for (size_t j = 0; j < 4; j++){
-            printf("%f\t", C[i * 4 + j]);
+            printf("%f\t", CT[i * 4 + j]);
         }
         printf("\n");
     }
+
+    printf("\n");
+    printf("tiled_matmul_me\n");
+    
+    float ATM[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
+    float BTM[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
+    float CTM[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    
+    tiled_matmul_me(ATM, BTM, CTM, 4, 4, 4, 2);
+
+    for (size_t i = 0; i < 4; i++)
+    {
+        printf("\n");
+        for (size_t j = 0; j < 4; j++){
+            printf("%f\t", CTM[i * 4 + j]);
+        }
+        printf("\n");
+    }
+
 
 
     float *A_large = malloc(1024 * 1024 * sizeof(float));
@@ -107,22 +153,35 @@ int main() {
         B_large[i] = rand() % 100;
         C_large[i] = 0;
     }
+    printf("executing matmul now ...\n");
     clock_t start = clock();
     matmul(A_large, B_large, C_large, 1024, 1024, 1024);
     clock_t end = clock();
     double time_spent = (double)(end - start) / CLOCKS_PER_SEC;
     printf("Time spent on matmul: %f seconds\n", time_spent);
+    printf("executing matmulcp now ...\n");
     start = clock();
     tiled_matmul_cp(A_large, B_large, C_large, 1024, 1024, 1024, 256);
     end = clock();
     time_spent = (double)(end - start) / CLOCKS_PER_SEC;
     printf("Time spent on tiled_matmul_cp: %f seconds\n", time_spent);
+    
+    printf("executing matmulcp2 now ...\n");
+    start = clock();
+    tiled_matmul_cp2(A_large, B_large, C_large, 1024, 1024, 1024, 256);
+    end = clock();
+    time_spent = (double)(end - start) / CLOCKS_PER_SEC;
+    printf("Time spent on tiled_matmul_cp2: %f seconds\n", time_spent);
+    printf("executing matmulme now ...\n");
 
     start = clock();
     tiled_matmul_me(A_large, B_large, C_large, 1024, 1024, 1024, 256);
     end = clock();
     time_spent = (double)(end - start) / CLOCKS_PER_SEC;
     printf("Time spent on tiled_matmul_me: %f seconds\n", time_spent);
+
+
+
     free(A_large);
     free(B_large);
     free(C_large);
