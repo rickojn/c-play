@@ -63,13 +63,14 @@ void tiled_matmul_me(const float* A, const float *B, float * C, size_t rows_C, s
                     for (size_t idx_tile_C_col = idx_col_C; idx_tile_C_col <idx_col_C + tile_size && idx_tile_C_col < cols_C; idx_tile_C_col++){
                         float dot_product = 0;
                         for (size_t idx_tile_inner = idx_rowB_colA; idx_tile_inner < idx_rowB_colA + tile_size && idx_tile_inner < rows_B_cols_A; idx_tile_inner++){
-                            // size_t offset_A = idx_tile_C_row * cols_C + idx_tile_inner;
-                            // size_t offset_B = idx_tile_C_col * cols_C + idx_tile_inner;
-                            // dot_product += A[offset_A] * B[offset_B];
-                            dot_product += A[idx_tile_C_row * cols_C + idx_tile_inner] * B[idx_tile_C_col * cols_C + idx_tile_inner];
+                            size_t offset_A = idx_tile_C_row * cols_C + idx_tile_inner;
+                            size_t offset_B = idx_tile_C_col * cols_C + idx_tile_inner;
+                            dot_product += A[offset_A] * B[offset_B];
+                            // dot_product += A[idx_tile_C_row * cols_C + idx_tile_inner] * B[idx_tile_C_col * cols_C + idx_tile_inner];
                         }
-                        // size_t offset_C = idx_tile_C_row * rows_C + idx_tile_C_col;
-                        C[idx_tile_C_row * rows_C + idx_tile_C_col] += dot_product;
+                        size_t offset_C = idx_tile_C_row * rows_C + idx_tile_C_col;
+                        C[offset_C] += dot_product;
+                        // C[idx_tile_C_row * rows_C + idx_tile_C_col] += dot_product;
                     }
                 }
             }
@@ -104,56 +105,56 @@ int main() {
     16,32,48,64
     */
 
-    float A[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
-    float B[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
-    float C[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-    matmul(A, B, C, 4, 4, 4);
+    // float A[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
+    // float B[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
+    // float C[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    // matmul(A, B, C, 4, 4, 4);
 
-    for (size_t i = 0; i < 4; i++)
-    {
-        printf("\n");
-        for (size_t j = 0; j < 4; j++){
-            printf("%f\t", C[i * 4 + j]);
-        }
-        printf("\n");
-    }
+    // for (size_t i = 0; i < 4; i++)
+    // {
+    //     printf("\n");
+    //     for (size_t j = 0; j < 4; j++){
+    //         printf("%f\t", C[i * 4 + j]);
+    //     }
+    //     printf("\n");
+    // }
 
-    printf("\n");
-    printf("tiled_matmul_cp2\n");
+    // printf("\n");
+    // printf("tiled_matmul_cp2\n");
     
-    float AT[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
-    float BT[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
-    float CT[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    // float AT[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
+    // float BT[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
+    // float CT[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     
-    tiled_matmul_cp2(AT, BT, CT, 4, 4, 4, 2);
+    // tiled_matmul_cp2(AT, BT, CT, 4, 4, 4, 2);
 
-    for (size_t i = 0; i < 4; i++)
-    {
-        printf("\n");
-        for (size_t j = 0; j < 4; j++){
-            printf("%f\t", CT[i * 4 + j]);
-        }
-        printf("\n");
-    }
+    // for (size_t i = 0; i < 4; i++)
+    // {
+    //     printf("\n");
+    //     for (size_t j = 0; j < 4; j++){
+    //         printf("%f\t", CT[i * 4 + j]);
+    //     }
+    //     printf("\n");
+    // }
 
-    printf("\n");
-    printf("tiled_matmul_me\n");
+    // printf("\n");
+    // printf("tiled_matmul_me\n");
     
-    float ATM[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
-    float BTM[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
-    // float BTM[] = {1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4};
-    float CTM[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    // float ATM[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
+    // float BTM[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
+    // // float BTM[] = {1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4};
+    // float CTM[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     
-    tiled_matmul_me(ATM, BTM, CTM, 4, 4, 4, 2);
+    // tiled_matmul_me(ATM, BTM, CTM, 4, 4, 4, 2);
 
-    for (size_t i = 0; i < 4; i++)
-    {
-        printf("\n");
-        for (size_t j = 0; j < 4; j++){
-            printf("%f\t", CTM[i * 4 + j]);
-        }
-        printf("\n");
-    }
+    // for (size_t i = 0; i < 4; i++)
+    // {
+    //     printf("\n");
+    //     for (size_t j = 0; j < 4; j++){
+    //         printf("%f\t", CTM[i * 4 + j]);
+    //     }
+    //     printf("\n");
+    // }
     
     
     // exit(0);
