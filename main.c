@@ -69,7 +69,7 @@ int main() {
     float A[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
     float B[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
     float C[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-    matmul(&A, &B, &C, 4, 4, 4);
+    matmul(A, B, C, 4, 4, 4);
 
     for (size_t i = 0; i < 4; i++)
     {
@@ -81,13 +81,13 @@ int main() {
     }
 
     printf("\n");
-    printf("tiled_matmul\n");
+    printf("tiled_matmul_me\n");
     
     float AT[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
     float BT[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
     float CT[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     
-    tiled_matmul_cp(&AT, &BT, &CT, 4, 4, 4, 2);
+    tiled_matmul_me(AT, BT, CT, 4, 4, 4, 2);
 
     for (size_t i = 0; i < 4; i++)
     {
