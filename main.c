@@ -63,12 +63,13 @@ void tiled_matmul_me(const float* A, const float *B, float * C, size_t rows_C, s
                     for (size_t idx_tile_C_col = idx_col_C; idx_tile_C_col <idx_col_C + tile_size && idx_tile_C_col < cols_C; idx_tile_C_col++){
                         float dot_product = 0;
                         for (size_t idx_tile_inner = idx_rowB_colA; idx_tile_inner < idx_rowB_colA + tile_size && idx_tile_inner < rows_B_cols_A; idx_tile_inner++){
-                            size_t offset_A = idx_tile_C_row * cols_C + idx_tile_inner;
-                            size_t offset_B = idx_tile_C_col * cols_C + idx_tile_inner;
-                            dot_product += A[offset_A] * B[offset_B];
+                            // size_t offset_A = idx_tile_C_row * cols_C + idx_tile_inner;
+                            // size_t offset_B = idx_tile_C_col * cols_C + idx_tile_inner;
+                            // dot_product += A[offset_A] * B[offset_B];
+                            dot_product += A[idx_tile_C_row * cols_C + idx_tile_inner] * B[idx_tile_C_col * cols_C + idx_tile_inner];
                         }
-                        size_t offset_C = idx_tile_C_row * rows_C + idx_tile_C_col;
-                        C[offset_C] += dot_product;
+                        // size_t offset_C = idx_tile_C_row * rows_C + idx_tile_C_col;
+                        C[idx_tile_C_row * rows_C + idx_tile_C_col] += dot_product;
                     }
                 }
             }
