@@ -59,16 +59,17 @@ void tiled_matmul_me(const float* A, const float *B, float * C, size_t rows_C, s
     for (size_t idx_row_C = 0; idx_row_C < rows_C; idx_row_C += tile_size){
         for (size_t idx_col_C = 0; idx_col_C < cols_C; idx_col_C += tile_size){
             for (size_t idx_rowB_colA = 0; idx_rowB_colA < rows_B_cols_A; idx_rowB_colA += tile_size){
-                for (size_t idx_tile_C_row = idx_row_C; idx_tile_C_row < min(idx_row_C + tile_size, rows_C) ; idx_tile_C_row++){
-                    for (size_t idx_tile_C_col = idx_col_C; idx_tile_C_col < min(idx_col_C + tile_size, cols_C); idx_tile_C_col++){
-                        float dot_product = 0.0;
-                        for (size_t idx_tile_rowB_colA = idx_rowB_colA; idx_tile_rowB_colA < min(idx_tile_rowB_colA + tile_size, rows_B_cols_A); idx_tile_rowB_colA++){
-                            size_t offset_A = idx_tile_C_row * rows_B_cols_A + idx_tile_rowB_colA;
-                            size_t offset_B = idx_tile_C_col * rows_B_cols_A + idx_tile_rowB_colA;
+                for (size_t idx_tile_C_row = idx_row_C; idx_tile_C_row < idx_row_C + tile_size && idx_tile_C_row < rows_C; idx_tile_C_row++){
+                    for (size_t idx_tile_C_col = idx_col_C; idx_tile_C_col <idx_col_C + tile_size && idx_tile_C_col < cols_C; idx_tile_C_col++){
+                        float dot_product = 0;
+                        for (size_t idx_tile_inner = idx_rowB_colA; idx_tile_inner < idx_rowB_colA + tile_size && idx_tile_inner < rows_B_cols_A; idx_tile_inner++){
+                            size_t offset_A = idx_tile_C_row * cols_C + idx_tile_inner;
+                            size_t offset_B = idx_tile_C_col * cols_C + idx_tile_inner;
                             dot_product += A[offset_A] * B[offset_B];
                         }
-                        size_t offset_C = idx_tile_C_row * cols_C + idx_tile_C_col;
+                        size_t offset_C = idx_tile_C_row * rows_C + idx_tile_C_col;
                         C[offset_C] += dot_product;
+                        printf("dot product added to C[%zu][%zu] to give %f\n",idx_tile_C_row, idx_tile_C_col, C[offset_C]);
                     }
                 }
             }
@@ -130,6 +131,7 @@ int main() {
     
     float ATM[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
     float BTM[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
+    // float BTM[] = {1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4};
     float CTM[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     
     tiled_matmul_me(ATM, BTM, CTM, 4, 4, 4, 2);
@@ -142,8 +144,9 @@ int main() {
         }
         printf("\n");
     }
-
-
+    
+    
+    exit(0);
 
     float *A_large = malloc(1024 * 1024 * sizeof(float));
     float *B_large = malloc(1024 * 1024 * sizeof(float));
@@ -153,6 +156,7 @@ int main() {
         B_large[i] = rand() % 100;
         C_large[i] = 0;
     }
+
     printf("executing matmul now ...\n");
     clock_t start = clock();
     matmul(A_large, B_large, C_large, 1024, 1024, 1024);
