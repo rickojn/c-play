@@ -115,22 +115,19 @@ sum of outer products:
 6 6
 
 
-
-
-
-
-
-
-
 */
 
 
 void matmul_outer_product(const float * A, const float * B, float * C, size_t M, size_t N, size_t K, size_t size_tile){
-    for (size_t idx_tile_start_M = 0; idx_tile_start_M < M; idx_tile_start_M += size_tile){
-        for (size_t idx_tile_start_N = 0; idx_tile_start_N < N; N += size_tile){
-            for (size_t idx_tile_start_K = 0; idx_tile_start_K < K; idx_tile_start_K += size_tile){
-
+    for (size_t tile_start_m = 0; tile_start_m < M; tile_start_m += size_tile){
+        for (size_t tile_start_n = 0; tile_start_n < N; N += size_tile){
+            for (size_t tile_start_k = 0; tile_start_k < K; tile_start_k += size_tile){
                 
+                for (size_t idx_m = tile_start_m; idx_m < tile_start_m + size_tile && idx_m < M; idx_m++){
+                    for (size_t idx_n = tile_start_n; idx_n < tile_start_n + size_tile && idx_n < N; idx_n++){
+                        
+                    }
+                }
             }
         }
     }
