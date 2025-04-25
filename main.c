@@ -79,6 +79,64 @@ void tiled_matmul_me(const float* A, const float *B, float * C, size_t rows_C, s
 }
 
 
+/*
+
+1 1    1 1
+2 2    2 2
+
+3 3
+6 6
+sum of outer products
+
+first column by first row:
+1  (+)   1 1
+2
+
+=
+
+1 1
+2 2
+
+second column by second row:
+
+1  (+)   2 2
+2
+
+2 2 
+4 4 
+
+
+sum of outer products:
+
+2 2 + 1 1
+4 4 + 2 2
+=
+3 3 
+6 6
+
+
+
+
+
+
+
+
+
+*/
+
+
+void matmul_outer_product(const float * A, const float * B, float * C, size_t M, size_t N, size_t K, size_t size_tile){
+    for (size_t idx_tile_start_M = 0; idx_tile_start_M < M; idx_tile_start_M += size_tile){
+        for (size_t idx_tile_start_N = 0; idx_tile_start_N < N; N += size_tile){
+            for (size_t idx_tile_start_K = 0; idx_tile_start_K < K; idx_tile_start_K += size_tile){
+
+                
+            }
+        }
+    }
+}
+
+
 void initialise_large_matrices(float *A_large, float * B_large, float * C_large){
     srand(42);
     for (size_t i = 0; i < 1024 * 1024; i++){
