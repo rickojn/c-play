@@ -122,20 +122,24 @@ void outer_product_sum_matmul(const float * A, const float * B, float * C, size_
     for (size_t tile_start_m = 0; tile_start_m < M; tile_start_m += size_tile){
         for (size_t tile_start_n = 0; tile_start_n < N; tile_start_n += size_tile){
             for (size_t tile_start_k = 0; tile_start_k < K; tile_start_k += size_tile){
-                // each k (col of A and row of B)
-                for (size_t idx_k = tile_start_k; idx_k < tile_start_k + size_tile && idx_k < K; idx_k++){
-                    for (size_t idx_m = tile_start_m; idx_m < tile_start_m + size_tile && idx_m < M; idx_m++){
-                        for (size_t idx_n = tile_start_n; idx_n < tile_start_n + size_tile && idx_n < N; idx_n++){
-                            // size_t offset_C = idx_m * M + idx_n;  // row major [m][n] 
-                            // size_t offset_A = idx_m + idx_k * N;  // column major [m][k]
-                            // size_t offset_B = idx_k * M + idx_n;  // row major [k][n]
+
+
+                for (size_t idx_m = tile_start_m; idx_m < tile_start_m + size_tile && idx_m < M; idx_m++){
+                    for (size_t idx_n = tile_start_n; idx_n < tile_start_n + size_tile && idx_n < N; idx_n++){
+                        // each k (col of A and row of B)
+                        for (size_t idx_k = tile_start_k; idx_k < tile_start_k + size_tile && idx_k < K; idx_k++){
+                            size_t offset_C = idx_m * M + idx_n;  // row major [m][n] 
+                            size_t offset_A = idx_m + idx_k * N;  // column major [m][k]
+                            size_t offset_B = idx_k * M + idx_n;  // row major [k][n]
                             // C[offset_C] += A[offset_A] * B[offset_B];                            
                             C[idx_m * M + idx_n] += A[idx_m + idx_k * N] * B[idx_k * M + idx_n];                            
-                        //     printf("C[%zu][%zu] += A[%zu][%zu] * B[%zu][%zu]  %f += %f  * %f  \n",
-                        //         idx_m, idx_n, idx_m, idx_k, idx_k, idx_n, C[offset_C], A[offset_A], B[offset_B]);
+                            printf("C[%zu][%zu] += A[%zu][%zu] * B[%zu][%zu]  %f += %f  * %f  \n",
+                                idx_m, idx_n, idx_m, idx_k, idx_k, idx_n, C[offset_C], A[offset_A], B[offset_B]);
                         }
                     }
                 }
+
+
             }
         }
     }
@@ -238,7 +242,7 @@ int main() {
     }
     
     
-    // exit(0);
+    exit(0);
 
 
     printf("executing matmul now ...\n");
