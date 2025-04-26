@@ -133,7 +133,7 @@ void outer_product_sum_matmul(const float * A, const float * B, float * C, size_
                             // size_t offset_A = idx_m + idx_k * N;  // column major [m][k]
                             // size_t offset_B = idx_k * M + idx_n;  // row major [k][n]
                             // C[offset_C] += A[offset_A] * B[offset_B];                            
-                            sum += A[idx_m + idx_k * N] * B[idx_k * M + idx_n];                            
+                            sum += A[idx_m * M + idx_k] * B[idx_k + idx_n * N];                            
                             // printf("C[%zu][%zu] += A[%zu][%zu] * B[%zu][%zu]  %f += %f  * %f  \n",
                                 // idx_m, idx_n, idx_m, idx_k, idx_k, idx_n, C[offset_C], A[offset_A], B[offset_B]);
                             }
@@ -254,8 +254,8 @@ int main() {
     printf("\n");
     printf("outer product matmul:\n");
 
-    float ATP[] = {1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4}; // column major
-    float BTP[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // row major
+    float ATP[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // row major
+    float BTP[] = {1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4}; // column major
     float CTP[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; // row major
     
     outer_product_sum_matmul(ATP, BTP, CTP, 4, 4, 4, 2);
