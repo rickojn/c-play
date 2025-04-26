@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-
-
 size_t min(size_t a, size_t b){
     return a < b ? a : b;
 }
@@ -126,18 +124,14 @@ void outer_product_sum_matmul(const float * A, const float * B, float * C, size_
 
                 for (size_t idx_m = tile_start_m; idx_m < tile_start_m + size_tile && idx_m < M; idx_m++){
                     for (size_t idx_n = tile_start_n; idx_n < tile_start_n + size_tile && idx_n < N; idx_n++){
-                        size_t offset_C = idx_m * M + idx_n;  // row major [m][n] 
                         float sum = 0.0;
                         // each k (col of A and row of B)
+                        size_t offset_m = idx_m * M;
+                        size_t offset_n = idx_n * N;
                         for (size_t idx_k = tile_start_k; idx_k < tile_start_k + size_tile && idx_k < K; idx_k++){
-                            // size_t offset_A = idx_m + idx_k * N;  // column major [m][k]
-                            // size_t offset_B = idx_k * M + idx_n;  // row major [k][n]
-                            // C[offset_C] += A[offset_A] * B[offset_B];                            
-                            sum += A[idx_m * M + idx_k] * B[idx_k + idx_n * N];                            
-                            // printf("C[%zu][%zu] += A[%zu][%zu] * B[%zu][%zu]  %f += %f  * %f  \n",
-                                // idx_m, idx_n, idx_m, idx_k, idx_k, idx_n, C[offset_C], A[offset_A], B[offset_B]);
+                            sum += A[offset_m + idx_k] * B[idx_k + offset_n];
                             }
-                            C[idx_m * M + idx_n] += sum;
+                        C[idx_m * M + idx_n] += sum;
                     }
                 }
 
@@ -148,31 +142,6 @@ void outer_product_sum_matmul(const float * A, const float * B, float * C, size_
 }
 
 
-void outer_product_sum_matmul2(const float * A, const float * B, float * C, size_t M, size_t N, size_t K, size_t size_tile){
-    for (size_t tile_start_m = 0; tile_start_m < M; tile_start_m += size_tile){
-        for (size_t tile_start_n = 0; tile_start_n < N; tile_start_n += size_tile){
-            
-
-
-                for (size_t idx_m = tile_start_m; idx_m < tile_start_m + size_tile && idx_m < M; idx_m++){
-                    for (size_t idx_n = tile_start_n; idx_n < tile_start_n + size_tile && idx_n < N; idx_n++){
-                        // each k (col of A and row of B)
-                        for (size_t idx_k = 0; idx_k < K; idx_k++){
-                            size_t offset_C = idx_m * M + idx_n;  // row major [m][n] 
-                            size_t offset_A = idx_m + idx_k * N;  // column major [m][k]
-                            size_t offset_B = idx_k * M + idx_n;  // row major [k][n]
-                            // C[offset_C] += A[offset_A] * B[offset_B];                            
-                            C[idx_m * M + idx_n] += A[idx_m + idx_k * N] * B[idx_k * M + idx_n];                            
-                            printf("C[%zu][%zu] += A[%zu][%zu] * B[%zu][%zu]  %f += %f  * %f  \n",
-                                idx_m, idx_n, idx_m, idx_k, idx_k, idx_n, C[offset_C], A[offset_A], B[offset_B]);
-                        }
-                    }
-                }
-
-
-        }
-    }
-}
 
 
 void initialise_large_matrices(float *A_large, float * B_large, float * C_large){
@@ -181,6 +150,16 @@ void initialise_large_matrices(float *A_large, float * B_large, float * C_large)
         A_large[i] = rand() % 100;
         B_large[i] = rand() % 100;
         C_large[i] = 0.0;
+    }
+}
+
+void check_result(const float * ref_result, const float * result, size_t M, size_t N){
+    for (size_t idx = 0; idx < M * N; idx++){
+        if (ref_result[idx] != result[idx]){
+            printf("this does not aggree with naive matmul\n");
+            printf("ref_result[%zu] = %f  result[%zu] = %f\n", idx, ref_result[idx], idx, result[idx]);
+            return;
+        }
     }
 }
 
@@ -201,8 +180,8 @@ int main() {
     16,32,48,64
     */
 
-    float A[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
-    float B[] = {1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4}; // column major
+    float A[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // row major
+    float B[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // column major
     float C[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     matmul(A, B, C, 4, 4, 4);
 
@@ -219,7 +198,7 @@ int main() {
     printf("tiled_matmul_cp2\n");
     
     float AT[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
-    float BT[] = {1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4}; // column major
+    float BT[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // column major
     float CT[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     
     tiled_matmul_cp2(AT, BT, CT, 4, 4, 4, 2);
@@ -237,7 +216,7 @@ int main() {
     printf("tiled_matmul_me\n");
     
     float ATM[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
-    float BTM[] = {1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4}; // column major
+    float BTM[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // column major
     float CTM[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     
     tiled_matmul_me(ATM, BTM, CTM, 4, 4, 4, 2);
@@ -255,7 +234,7 @@ int main() {
     printf("outer product matmul:\n");
 
     float ATP[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // row major
-    float BTP[] = {1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4}; // column major
+    float BTP[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // column major
     float CTP[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; // row major
     
     outer_product_sum_matmul(ATP, BTP, CTP, 4, 4, 4, 2);
@@ -279,9 +258,10 @@ int main() {
     float * LB = malloc(1024 * 1024 * sizeof(float));
     float * LC = malloc(1024 * 1024 * sizeof(float));
     initialise_large_matrices(LA, LB, LC);
+    float * ref_C = calloc(1024 * 1024, sizeof(float));
 
     clock_t start = clock();
-    matmul(LB, LB, LC, 1024, 1024, 1024);
+    matmul(LA, LB, ref_C, 1024, 1024, 1024);
     clock_t end = clock();
     double time_spent = (double)(end - start) / CLOCKS_PER_SEC;
     printf("Time spent on matmul: %f seconds\n", time_spent);
@@ -294,6 +274,7 @@ int main() {
     end = clock();
     time_spent = (double)(end - start) / CLOCKS_PER_SEC;
     printf("Time spent on tiled_matmul_cp: %f seconds\n", time_spent);
+    check_result(ref_C, LC, 1024, 1024);
     
     printf("executing matmulcp2 now ...\n");
     initialise_large_matrices(LA, LB, LC);
@@ -302,6 +283,7 @@ int main() {
     end = clock();
     time_spent = (double)(end - start) / CLOCKS_PER_SEC;
     printf("Time spent on tiled_matmul_cp2: %f seconds\n", time_spent);
+    check_result(ref_C, LC, 1024, 1024);
 
 
     printf("executing matmulme now ...\n");
@@ -311,6 +293,7 @@ int main() {
     end = clock();
     time_spent = (double)(end - start) / CLOCKS_PER_SEC;
     printf("Time spent on tiled_matmul_me: %f seconds\n", time_spent);
+    check_result(ref_C, LC, 1024, 1024);
 
 
     printf("executing outer product matmul now ...\n");
@@ -320,6 +303,7 @@ int main() {
     end = clock();
     time_spent = (double)(end - start) / CLOCKS_PER_SEC;
     printf("Time spent on outer product matmul2: %f seconds\n", time_spent);
+    check_result(ref_C, LC, 1024, 1024);
 
 
 
@@ -328,7 +312,6 @@ int main() {
     free(LC);
 
 }
-
 
 
 // gcc -o main main.c -lm
