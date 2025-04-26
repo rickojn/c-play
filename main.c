@@ -146,6 +146,33 @@ void outer_product_sum_matmul(const float * A, const float * B, float * C, size_
 }
 
 
+void outer_product_sum_matmul2(const float * A, const float * B, float * C, size_t M, size_t N, size_t K, size_t size_tile){
+    for (size_t tile_start_m = 0; tile_start_m < M; tile_start_m += size_tile){
+        for (size_t tile_start_n = 0; tile_start_n < N; tile_start_n += size_tile){
+            
+
+
+                for (size_t idx_m = tile_start_m; idx_m < tile_start_m + size_tile && idx_m < M; idx_m++){
+                    for (size_t idx_n = tile_start_n; idx_n < tile_start_n + size_tile && idx_n < N; idx_n++){
+                        // each k (col of A and row of B)
+                        for (size_t idx_k = 0; idx_k < K; idx_k++){
+                            size_t offset_C = idx_m * M + idx_n;  // row major [m][n] 
+                            size_t offset_A = idx_m + idx_k * N;  // column major [m][k]
+                            size_t offset_B = idx_k * M + idx_n;  // row major [k][n]
+                            // C[offset_C] += A[offset_A] * B[offset_B];                            
+                            C[idx_m * M + idx_n] += A[idx_m + idx_k * N] * B[idx_k * M + idx_n];                            
+                            printf("C[%zu][%zu] += A[%zu][%zu] * B[%zu][%zu]  %f += %f  * %f  \n",
+                                idx_m, idx_n, idx_m, idx_k, idx_k, idx_n, C[offset_C], A[offset_A], B[offset_B]);
+                        }
+                    }
+                }
+
+
+        }
+    }
+}
+
+
 void initialise_large_matrices(float *A_large, float * B_large, float * C_large){
     srand(42);
     for (size_t i = 0; i < 1024 * 1024; i++){
@@ -223,13 +250,13 @@ int main() {
     }
 
     printf("\n");
-    printf("outer product matmul:\n");
+    printf("outer product matmul2:\n");
 
     float ATP[] = {1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4}; // column major
     float BTP[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // row major
     float CTP[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; // row major
     
-    outer_product_sum_matmul(ATP, BTP, CTP, 4, 4, 4, 2);
+    outer_product_sum_matmul2(ATP, BTP, CTP, 4, 4, 4, 2);
 
     printf("\n");
     for (size_t i = 0; i < 4; i++)
@@ -284,13 +311,13 @@ int main() {
     printf("Time spent on tiled_matmul_me: %f seconds\n", time_spent);
 
 
-    printf("executing outer product matmul now ...\n");
+    printf("executing outer product matmul2 now ...\n");
     initialise_large_matrices(LA, LB, LC);
     start = clock();
-    outer_product_sum_matmul(LA, LB, LC, 1024, 1024, 1024, 256);
+    outer_product_sum_matmul2(LA, LB, LC, 1024, 1024, 1024, 256);
     end = clock();
     time_spent = (double)(end - start) / CLOCKS_PER_SEC;
-    printf("Time spent on outer product matmul: %f seconds\n", time_spent);
+    printf("Time spent on outer product matmul2: %f seconds\n", time_spent);
 
 
 
