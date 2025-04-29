@@ -240,7 +240,7 @@ int main() {
     printf("executing matmulcp now ...\n");
     initialise_large_matrices(LA, LB, LC);
     start = clock();
-    tiled_matmul_cp(LA, LB, LC, M, N, K, 256);
+    tiled_matmul_cp(LA, LB, LC, M, N, K, 64);
     end = clock();
     time_spent = (double)(end - start) / CLOCKS_PER_SEC;
     printf("Time spent on tiled_matmul_cp: %f seconds\n", time_spent);
@@ -249,7 +249,7 @@ int main() {
     printf("executing matmulcp2 now ...\n");
     initialise_large_matrices(LA, LB, LC);
     start = clock();
-    tiled_matmul_cp2(LA, LB, LC, M, N, K, 256);
+    tiled_matmul_cp2(LA, LB, LC, M, N, K, 64);
     end = clock();
     time_spent = (double)(end - start) / CLOCKS_PER_SEC;
     printf("Time spent on tiled_matmul_cp2: %f seconds\n", time_spent);
@@ -260,7 +260,7 @@ int main() {
     printf("executing dot product matmul now ...\n");
     initialise_large_matrices(LA, LB, LC);
     start = clock();
-    dot_product_matmul(LA, LB, LC, M, N, K, 256);
+    dot_product_matmul(LA, LB, LC, M, N, K, 64);
     end = clock();
     time_spent = (double)(end - start) / CLOCKS_PER_SEC;
     printf("Time spent on dot product matmul2: %f seconds\n", time_spent);
