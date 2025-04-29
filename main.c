@@ -98,7 +98,7 @@ sum of outer products:
 */
 
 
-void outer_product_sum_matmul(const float * A, const float * B, float * C, size_t m, size_t n, size_t k, size_t size_tile){
+void dot_product_matmul(const float * A, const float * B, float * C, size_t m, size_t n, size_t k, size_t size_tile){
     for (size_t tile_start_m = 0; tile_start_m < m; tile_start_m += size_tile){
         for (size_t tile_start_n = 0; tile_start_n < n; tile_start_n += size_tile){
             for (size_t tile_start_k = 0; tile_start_k < k; tile_start_k += size_tile){
@@ -201,13 +201,13 @@ int main() {
 
 
     printf("\n");
-    printf("outer product matmul:\n");
+    printf("dot product matmul:\n");
 
     float ATP[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // row major
     float BTP[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // column major
     float CTP[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; // row major
     
-    outer_product_sum_matmul(ATP, BTP, CTP, 4, 4, 4, 2);
+    dot_product_matmul(ATP, BTP, CTP, 4, 4, 4, 2);
 
     printf("\n");
     for (size_t i = 0; i < 4; i++)
@@ -257,13 +257,13 @@ int main() {
 
 
 
-    printf("executing outer product matmul now ...\n");
+    printf("executing dot product matmul now ...\n");
     initialise_large_matrices(LA, LB, LC);
     start = clock();
-    outer_product_sum_matmul(LA, LB, LC, M, N, K, 256);
+    dot_product_matmul(LA, LB, LC, M, N, K, 256);
     end = clock();
     time_spent = (double)(end - start) / CLOCKS_PER_SEC;
-    printf("Time spent on outer product matmul2: %f seconds\n", time_spent);
+    printf("Time spent on dot product matmul2: %f seconds\n", time_spent);
     check_result(ref_C, LC, 1024, 1024);
 
 
