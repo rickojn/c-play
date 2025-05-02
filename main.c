@@ -6,6 +6,8 @@
 #define N 256
 #define K 784
 #define TILE 64
+#define NAIVE 1
+#define TILED 0
 
 size_t min(size_t a, size_t b){
     return a < b ? a : b;
@@ -231,24 +233,29 @@ int main() {
     initialise_large_matrices(LA, LB, LC);
     float * ref_C = calloc(M * N, sizeof(float));
     clock_t start, end;
+    double time_spent;
 
-    start = clock();
-    matmul(LA, LB, ref_C, M, N, K);
-    end = clock();
-    double time_spent = (double)(end - start) / CLOCKS_PER_SEC;
-    printf("Time spent on matmul: %f seconds\n", time_spent);
+    if (NAIVE)
+    {
+        printf("Naive .. \n");
+        start = clock();
+        matmul(LA, LB, ref_C, M, N, K);
+        end = clock();
+        time_spent = (double)(end - start) / CLOCKS_PER_SEC;
+        printf("Time spent on matmul: %f seconds\n", time_spent);
+    }
 
+    if (TILED){
+        printf("executing dot product matmul now with tile %d ...\n", TILE);
+        initialise_large_matrices(LA, LB, LC);
+        start = clock();
+        dot_product_matmul(LA, LB, LC, M, N, K, TILE);
+        end = clock();
+        time_spent = (double)(end - start) / CLOCKS_PER_SEC;
+        printf("Time spent on dot product matmul2: %f seconds\n", time_spent);
+        check_result(ref_C, LC, 1024, 1024);
+    }
 
-    
-
-    printf("executing dot product matmul now with tile %d ...\n", TILE);
-    initialise_large_matrices(LA, LB, LC);
-    start = clock();
-    dot_product_matmul(LA, LB, LC, M, N, K, TILE);
-    end = clock();
-    time_spent = (double)(end - start) / CLOCKS_PER_SEC;
-    printf("Time spent on dot product matmul2: %f seconds\n", time_spent);
-    check_result(ref_C, LC, 1024, 1024);
 
 
 
