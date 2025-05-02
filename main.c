@@ -6,8 +6,9 @@
 #define N 256
 #define K 784
 #define TILE 64
-#define NAIVE 1
-#define TILED 0
+#define NAIVE 0
+#define TILED 1
+#define ONLY_LARGE 0
 
 size_t min(size_t a, size_t b){
     return a < b ? a : b;
@@ -101,7 +102,7 @@ sum of outer products:
 */
 
 
-void dot_product_matmul(const float * A, const float * B, float * C, size_t m, size_t n, size_t k, size_t size_tile){
+void tiled_matmul(const float * A, const float * B, float * C, size_t m, size_t n, size_t k, size_t size_tile){
     for (size_t tile_start_m = 0; tile_start_m < m; tile_start_m += size_tile){
         for (size_t tile_start_n = 0; tile_start_n < n; tile_start_n += size_tile){
             for (size_t tile_start_k = 0; tile_start_k < k; tile_start_k += size_tile){
@@ -170,63 +171,54 @@ int main() {
     16,32,48,64
     */
 
-    // float A[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // row major
-    // float B[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // column major
-    // float C[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-    // matmul(A, B, C, 4, 4, 4);
-
-    // for (size_t i = 0; i < 4; i++)
-    // {
-    //     printf("\n");
-    //     for (size_t j = 0; j < 4; j++){
-    //         printf("%f\t", C[i * 4 + j]);
-    //     }
-    //     printf("\n");
-    // }
-
-    // printf("\n");
-    // printf("tiled_matmul_cp2\n");
+    if (!ONLY_LARGE && NAIVE){
+        printf("naive matmul ... \n");
+        float A[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // row major
+        float B[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // column major
+        float C[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+        matmul(A, B, C, 4, 4, 4);
     
-    // float AT[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
-    // float BT[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // column major
-    // float CT[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+        for (size_t i = 0; i < 4; i++)
+        {
+            printf("\n");
+            for (size_t j = 0; j < 4; j++){
+                printf("%f\t", C[i * 4 + j]);
+            }
+            printf("\n");
+        }
     
-    // tiled_matmul_cp2(AT, BT, CT, 4, 4, 4, 2);
+        printf("\n");
+    }
 
-    // for (size_t i = 0; i < 4; i++)
-    // {
-    //     printf("\n");
-    //     for (size_t j = 0; j < 4; j++){
-    //         printf("%f\t", CT[i * 4 + j]);
-    //     }
-    //     printf("\n");
-    // }
-
-
-    // printf("\n");
-    // printf("dot product matmul:\n");
-
-    // float ATP[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // row major
-    // float BTP[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // column major
-    // float CTP[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; // row major
     
-    // dot_product_matmul(ATP, BTP, CTP, 4, 4, 4, 2);
 
-    // printf("\n");
-    // for (size_t i = 0; i < 4; i++)
-    // {
-    //     printf("\n");   
-    //     for (size_t j = 0; j < 4; j++){
-    //         printf("%f\t", CTP[i * 4 + j]);
-    //     }
-    //     printf("\n");
-    // }
+
+
+    if (!ONLY_LARGE && TILED){
+        printf("\n");
+        printf("tiled matmul:\n");
+    
+        float ATP[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // row major
+        float BTP[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // column major
+        float CTP[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; // row major
+        
+        tiled_matmul(ATP, BTP, CTP, 4, 4, 4, 2);
+    
+        printf("\n");
+        for (size_t i = 0; i < 4; i++)
+        {
+            printf("\n");   
+            for (size_t j = 0; j < 4; j++){
+                printf("%f\t", CTP[i * 4 + j]);
+            }
+            printf("\n");
+        }
+    }
     
     
-    // // exit(0);
+    // exit(0);
 
 
-    // printf("executing matmul now ...\n");
     float * LA = malloc(M * K * sizeof(float));
     float * LB = malloc(K * N * sizeof(float));
     float * LC = malloc(M * N * sizeof(float));
@@ -249,11 +241,13 @@ int main() {
         printf("executing dot product matmul now with tile %d ...\n", TILE);
         initialise_large_matrices(LA, LB, LC);
         start = clock();
-        dot_product_matmul(LA, LB, LC, M, N, K, TILE);
+        tiled_matmul(LA, LB, LC, M, N, K, TILE);
         end = clock();
         time_spent = (double)(end - start) / CLOCKS_PER_SEC;
-        printf("Time spent on dot product matmul2: %f seconds\n", time_spent);
-        check_result(ref_C, LC, 1024, 1024);
+        printf("Time spent on tiled matmul: %f seconds\n", time_spent);
+        if (NAIVE){
+            check_result(ref_C, LC, 1024, 1024);
+        }
     }
 
 
