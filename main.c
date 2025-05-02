@@ -6,15 +6,16 @@
 #define N 256
 #define K 784
 #define TILE 64
-#define NAIVE 0
-#define TILED 1
+#define NAIVE 1
+#define OUTER 1
+#define TILED 0
 #define ONLY_LARGE 0
 
 size_t min(size_t a, size_t b){
     return a < b ? a : b;
 }
 
-void matmul(const float* A, const float *B, float * C, size_t rows_C, size_t cols_C, size_t rows_B_cols_A){
+void naive_matmul(const float* A, const float *B, float * C, size_t rows_C, size_t cols_C, size_t rows_B_cols_A){
     for (size_t i = 0; i < rows_C; i++ ){
         for (size_t j = 0; j < cols_C; j++){
             for (size_t k = 0; k < rows_B_cols_A; k++){            
@@ -43,64 +44,78 @@ void tiled_matmul_cp(const float* A, const float *B, float * C, size_t rows_C, s
 }
 
 
-void tiled_matmul_cp2(const float* A, const float *B, float * C, size_t rows_C, size_t cols_C, size_t rows_B_cols_A, size_t tile_size){
-    for (size_t i = 0; i < rows_C; i += tile_size){
-        for (size_t j = 0; j < cols_C; j += tile_size){
-            for (size_t k = 0; k < rows_B_cols_A; k += tile_size){
-                for (size_t ii = i; ii < i + tile_size && ii < rows_C; ii++){
-                    for (size_t jj = j; jj < j + tile_size && jj < cols_C; jj++){
-                        float sum = 0;
-                        for (size_t kk = k; kk < k + tile_size && kk < rows_B_cols_A; kk++){
-                            sum += A[ii * rows_B_cols_A + kk] * B[jj *cols_C + kk]; 
-                        }
-                        C[ii * cols_C + jj] += sum;
-                    }
-                }
-            }
-        }
-    }
-}
 
 
 
 /*
 
-1 1    1 1
-2 2    2 2
+m = 3 n= 4 k = 2
 
-3 3
-6 6
+1 10    1 1 1 1
+2 20    2 2 2 2
+3 30    
+
+21 21 21 21
+42 42 42 42
+63 63 63 63
+
 sum of outer products
 
 first column by first row:
-1  (+)   1 1
+1  (x)   1 1 1 1
 2
+3
 
 =
 
-1 1
-2 2
+1 1 1 1
+2 2 2 2
+3 3 3 3
+
+
 
 second column by second row:
 
-1  (+)   2 2
-2
+10  (x)   2 2 2 2
+20
+30
 
-2 2 
-4 4 
+20 20 20 20
+40 40 40 40
+60 60 60 60
+ 
 
 
 sum of outer products:
 
-2 2 + 1 1
-4 4 + 2 2
+1 1 1 1   20 20 20 20
+2 2 2 2 + 40 40 40 40
+3 3 3 3   60 60 60 60
 =
-3 3 
-6 6
+21 21 21 21
+42 42 42 42
+63 63 63 63
 
 
 */
 
+void outer_product_matmul(const float * a, const float * b, float * c, size_t m, size_t n, size_t k ){
+    for (size_t idx_k = 0; idx_k < k; idx_k++){
+        for (size_t idx_m = 0; idx_m < m; idx_m++){
+            for (size_t idx_n = 0; idx_n < n; idx_n++){
+                size_t offset_a = idx_k * m  + idx_m; // a[m][k] col major 
+                size_t offset_b = idx_k * n + idx_n;  // b[k][n]  row major
+                size_t offset_c = idx_m * n + idx_n; // row major
+                float db_a = a[offset_a];
+                float db_b = b[offset_b];
+                float db_c_before = c[offset_c];
+                c[offset_c] += a[offset_a] * b[offset_b];
+                float db_c_after = c[offset_c];
+                int x = 0;
+            }
+        }
+    }
+}
 
 void tiled_matmul(const float * A, const float * B, float * C, size_t m, size_t n, size_t k, size_t size_tile){
     for (size_t tile_start_m = 0; tile_start_m < m; tile_start_m += size_tile){
@@ -126,6 +141,9 @@ void tiled_matmul(const float * A, const float * B, float * C, size_t m, size_t 
         }
     }
 }
+
+
+
 
 
 
@@ -176,7 +194,7 @@ int main() {
         float A[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // row major
         float B[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // column major
         float C[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-        matmul(A, B, C, 4, 4, 4);
+        naive_matmul(A, B, C, 4, 4, 4);
     
         for (size_t i = 0; i < 4; i++)
         {
@@ -190,6 +208,24 @@ int main() {
         printf("\n");
     }
 
+    if (!ONLY_LARGE && OUTER){
+        printf("outer product matmul ... \n");
+        float AO[] = {1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4}; // column major
+        float BO[] = {1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4}; // row major
+        float CO[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+        outer_product_matmul(AO, BO, CO, 4, 4, 4);
+    
+        for (size_t i = 0; i < 4; i++)
+        {
+            printf("\n");
+            for (size_t j = 0; j < 4; j++){
+                printf("%f\t", CO[i * 4 + j]);
+            }
+            printf("\n");
+        }
+    
+        printf("\n");
+    }
     
 
 
@@ -231,7 +267,7 @@ int main() {
     {
         printf("Naive .. \n");
         start = clock();
-        matmul(LA, LB, ref_C, M, N, K);
+        naive_matmul(LA, LB, ref_C, M, N, K);
         end = clock();
         time_spent = (double)(end - start) / CLOCKS_PER_SEC;
         printf("Time spent on matmul: %f seconds\n", time_spent);
