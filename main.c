@@ -26,22 +26,6 @@ void naive_matmul(const float* A, const float *B, float * C, size_t rows_C, size
 }
 
 
-void tiled_matmul_cp(const float* A, const float *B, float * C, size_t rows_C, size_t cols_C, size_t rows_B_cols_A, size_t tile_size){
-    for (size_t i = 0; i < rows_C; i += tile_size){
-        for (size_t j = 0; j < cols_C; j += tile_size){
-            for (size_t k = 0; k < rows_B_cols_A; k += tile_size){
-                for (size_t ii = i; ii < i + tile_size && ii < rows_C; ii++){
-                    for (size_t jj = j; jj < j + tile_size && jj < cols_C; jj++){
-                        for (size_t kk = k; kk < k + tile_size && kk < rows_B_cols_A; kk++){
-                            C[ii * cols_C + jj] += A[ii * rows_B_cols_A + kk] * B[jj *cols_C + kk]; 
-                        }
-                    }
-                }
-            }
-        }
-    }
- 
-}
 
 
 
@@ -103,15 +87,11 @@ void outer_product_matmul(const float * a, const float * b, float * c, size_t m,
     for (size_t idx_k = 0; idx_k < k; idx_k++){
         for (size_t idx_m = 0; idx_m < m; idx_m++){
             for (size_t idx_n = 0; idx_n < n; idx_n++){
-                size_t offset_a = idx_k * m  + idx_m; // a[m][k] col major 
-                size_t offset_b = idx_k * n + idx_n;  // b[k][n]  row major
-                size_t offset_c = idx_m * n + idx_n; // row major
-                float db_a = a[offset_a];
-                float db_b = b[offset_b];
-                float db_c_before = c[offset_c];
-                c[offset_c] += a[offset_a] * b[offset_b];
-                float db_c_after = c[offset_c];
-                int x = 0;
+                // size_t offset_a = idx_k * m  + idx_m; // a[m][k] col major 
+                // size_t offset_b = idx_k * n + idx_n;  // b[k][n]  row major
+                // size_t offset_c = idx_m * n + idx_n; // row major
+                // c[offset_c] += a[offset_a] * b[offset_b];
+                c[idx_m * n +idx_n] += a[idx_k * m +idx_m] * b[idx_k * n + idx_n];
             }
         }
     }
@@ -285,6 +265,20 @@ int main() {
             check_result(ref_C, LC, 1024, 1024);
         }
     }
+
+    if (OUTER){
+        printf("executing outer product matmul now ...\n");
+        initialise_large_matrices(LA, LB, LC);
+        start = clock();
+        outer_product_matmul(LA, LB, LC, M, N, K);
+        end = clock();
+        time_spent = (double)(end - start) / CLOCKS_PER_SEC;
+        printf("Time spent on tiled matmul: %f seconds\n", time_spent);
+        if (NAIVE){
+            check_result(ref_C, LC, 1024, 1024);
+        }
+    }
+
 
 
 
