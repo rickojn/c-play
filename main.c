@@ -9,7 +9,10 @@
 #define NAIVE 1
 #define OUTER 1
 #define TILED 0
-#define ONLY_LARGE 0
+#define L1 1
+#define ONLY_LARGE 1
+
+
 
 size_t min(size_t a, size_t b){
     return a < b ? a : b;
@@ -124,6 +127,33 @@ void tiled_matmul(const float * A, const float * B, float * C, size_t m, size_t 
 
 
 
+void l1_tiled_matmul(const float * A, const float * B, float * C, size_t m, size_t n, size_t k, size_t size_outer_tile, size_t size_inner_tile){
+    for (size_t idx_m = 0; idx_m < m; idx_m += size_outer_tile){
+        for (size_t idx_n = 0; idx_n < n; idx_n += size_outer_tile){
+            for (size_t idx_k = 0; idx_k < k; k++){
+                
+                for (size_t idx_mm = idx_m; idx_mm < idx_m + size_outer_tile && idx_mm < m; idx_mm += size_inner_tile){
+                    for (size_t idx_nn = idx_n; idx_nn < idx_n + size_outer_tile && idx_nn < n; idx_nn += size_inner_tile){
+                        for (size_t idx_kk = idx_k; idx_kk < idx_k + size_outer_tile && idx_kk < k; idx_kk += size_inner_tile){
+
+                            for (size_t idx_mmm = idx_mm; idx_mmm < idx_mm + size_inner_tile && idx_mmm < m; idx_mmm++){
+                                for (size_t idx_nnn = idx_nn; idx_nnn < idx_nn + size_inner_tile && idx_nnn < n; idx_nnn++){
+                                    float sum = 0;
+                                    size_t offset_a = idx_mmm * k;
+                                    size_t offset_b = idx_nnn * n;
+                                    for (size_t idx_kkk = idx_kk; idx_kkk < idx_kk + size_inner_tile && idx_kkk < k; idx_kkk++){
+                                        sum += A[offset_a + idx_kkk] * B[offset_b + idx_kkk];
+                                    }
+                                    C[idx_mmm * n + idx_nnn] += sum;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 
 
