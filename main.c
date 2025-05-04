@@ -6,9 +6,10 @@
 #define N 256
 #define K 784
 #define TILE 64
+#define INNER_TILE 32
 #define NAIVE 1
-#define OUTER 1
-#define TILED 0
+#define OUTER 0
+#define TILED 1
 #define L1 1
 #define ONLY_LARGE 1
 
@@ -130,7 +131,7 @@ void tiled_matmul(const float * A, const float * B, float * C, size_t m, size_t 
 void l1_tiled_matmul(const float * A, const float * B, float * C, size_t m, size_t n, size_t k, size_t size_outer_tile, size_t size_inner_tile){
     for (size_t idx_m = 0; idx_m < m; idx_m += size_outer_tile){
         for (size_t idx_n = 0; idx_n < n; idx_n += size_outer_tile){
-            for (size_t idx_k = 0; idx_k < k; k++){
+            for (size_t idx_k = 0; idx_k < k; idx_k += size_outer_tile){
                 
                 for (size_t idx_mm = idx_m; idx_mm < idx_m + size_outer_tile && idx_mm < m; idx_mm += size_inner_tile){
                     for (size_t idx_nn = idx_n; idx_nn < idx_n + size_outer_tile && idx_nn < n; idx_nn += size_inner_tile){
@@ -260,6 +261,30 @@ int main() {
             printf("\n");
         }
     }
+
+    if (!ONLY_LARGE && L1){
+        printf("\n");
+        printf("l1 tiled matmul:\n");
+    
+        float ATL[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // row major
+        float BTL[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // column major
+        float CTL[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; // row major
+        
+        l1_tiled_matmul(ATL, BTL, CTL, 4, 4, 4, 2, 1);
+    
+        printf("\n");
+        for (size_t i = 0; i < 4; i++)
+        {
+            printf("\n");   
+            for (size_t j = 0; j < 4; j++){
+                printf("%f\t", CTL[i * 4 + j]);
+            }
+            printf("\n");
+        }
+        
+    }
+
+
     
     
     // exit(0);
@@ -303,11 +328,25 @@ int main() {
         outer_product_matmul(LA, LB, LC, M, N, K);
         end = clock();
         time_spent = (double)(end - start) / CLOCKS_PER_SEC;
-        printf("Time spent on tiled matmul: %f seconds\n", time_spent);
+        printf("Time spent on outer matmul: %f seconds\n", time_spent);
         if (NAIVE){
             check_result(ref_C, LC, 1024, 1024);
         }
     }
+
+    if (L1){
+        printf("executing outer product matmul now with tile %d and inner tile %d ...\n", TILE, INNER_TILE);
+        initialise_large_matrices(LA, LB, LC);
+        start = clock();
+        l1_tiled_matmul(LA, LB, LC, M, N, K, TILE, INNER_TILE);
+        end = clock();
+        time_spent = (double)(end - start) / CLOCKS_PER_SEC;
+        printf("Time spent on l1 matmul: %f seconds\n", time_spent);
+        if (NAIVE){
+            check_result(ref_C, LC, 1024, 1024);
+        }
+    }
+
 
 
 
