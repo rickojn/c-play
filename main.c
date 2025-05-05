@@ -5,11 +5,11 @@
 #define M 10000
 #define N 256
 #define K 784
-#define TILE 64
+#define TILE 128
 #define INNER_TILE 32
-#define NAIVE 1
+#define NAIVE 0
 #define OUTER 0
-#define TILED 1
+#define TILED 0
 #define L1 1
 #define ONLY_LARGE 1
 
@@ -142,8 +142,15 @@ void l1_tiled_matmul(const float * A, const float * B, float * C, size_t m, size
                                     float sum = 0;
                                     size_t offset_a = idx_mmm * k;
                                     size_t offset_b = idx_nnn * n;
-                                    for (size_t idx_kkk = idx_kk; idx_kkk < idx_kk + size_inner_tile && idx_kkk < k; idx_kkk++){
+                                    size_t idx_kkk = idx_kk;
+                                    for (;idx_kkk < idx_kk + size_inner_tile && idx_kkk < k; idx_kkk+= 4){
                                         sum += A[offset_a + idx_kkk] * B[offset_b + idx_kkk];
+                                        sum += A[offset_a + idx_kkk] * B[offset_b + idx_kkk + 1];
+                                        sum += A[offset_a + idx_kkk] * B[offset_b + idx_kkk + 2];
+                                        sum += A[offset_a + idx_kkk] * B[offset_b + idx_kkk + 3];
+                                    }
+                                    for (; idx_kkk < idx_kk + size_inner_tile && idx_kkk < k; idx_kkk++){
+                                        sum += A[offset_a + idx_kkk] * B[offset_b +idx_kkk];
                                     }
                                     C[idx_mmm * n + idx_nnn] += sum;
                                 }
@@ -335,7 +342,7 @@ int main() {
     }
 
     if (L1){
-        printf("executing outer product matmul now with tile %d and inner tile %d ...\n", TILE, INNER_TILE);
+        printf("executing l1 matmul now with tile %d and inner tile %d ...\n", TILE, INNER_TILE);
         initialise_large_matrices(LA, LB, LC);
         start = clock();
         l1_tiled_matmul(LA, LB, LC, M, N, K, TILE, INNER_TILE);
@@ -361,3 +368,40 @@ int main() {
 
 // gcc -o main main.c -lm
 // ./main
+/*
+perf stat -e L1-dcache-loads,L1-dcache-load-misses,l2_rqsts.references,l2_rqsts.miss ./main
+matmul
+executing dot product matmul now with tile 128 ...
+Time spent on tiled matmul: 4.997170 seconds
+
+ Performance counter stats for './main':
+
+       30932490400      L1-dcache-loads:u
+         175512901      L1-dcache-load-misses:u   #    0.57% of all L1-dcache accesses
+         327493694      l2_rqsts.references:u
+          46032171      l2_rqsts.miss:u
+
+       5.142546610 seconds time elapsed
+
+       5.141686000 seconds user
+       0.000000000 seconds sys
+
+       matmul
+executing l1 matmul now with tile 128 and inner tile 32 ...
+Time spent on l1 matmul: 4.681905 seconds
+
+ Performance counter stats for './main':
+
+       23223377266      L1-dcache-loads:u
+          64345036      L1-dcache-load-misses:u   #    0.28% of all L1-dcache accesses
+         126382774      l2_rqsts.references:u
+          18990080      l2_rqsts.miss:u
+
+       4.826988750 seconds time elapsed
+
+       4.816960000 seconds user
+       0.010014000 seconds sys
+
+
+
+*/
