@@ -140,14 +140,18 @@ void l1_tiled_matmul(const float * A, const float * B, float * C, size_t m, size
                             for (size_t idx_mmm = idx_mm; idx_mmm < idx_mm + size_inner_tile && idx_mmm < m; idx_mmm++){
                                 for (size_t idx_nnn = idx_nn; idx_nnn < idx_nn + size_inner_tile && idx_nnn < n; idx_nnn++){
                                     float sum = 0;
-                                    size_t offset_a = idx_mmm * k;
-                                    size_t offset_b = idx_nnn * n;
+                                    size_t offset_a = idx_mmm * k; // A[idx_mmm][0] row major
+                                    size_t offset_b = idx_nnn * k; // B[0][idx_nnn] col major
                                     size_t idx_kkk = idx_kk;
-                                    for (;idx_kkk < idx_kk + size_inner_tile && idx_kkk < k; idx_kkk+= 4){
+                                    for (;idx_kkk < idx_kk + size_inner_tile && idx_kkk < k; idx_kkk+= 8){
                                         sum += A[offset_a + idx_kkk] * B[offset_b + idx_kkk];
-                                        sum += A[offset_a + idx_kkk] * B[offset_b + idx_kkk + 1];
-                                        sum += A[offset_a + idx_kkk] * B[offset_b + idx_kkk + 2];
-                                        sum += A[offset_a + idx_kkk] * B[offset_b + idx_kkk + 3];
+                                        sum += A[offset_a + idx_kkk + 1] * B[offset_b + idx_kkk + 1];
+                                        sum += A[offset_a + idx_kkk + 2] * B[offset_b + idx_kkk + 2];
+                                        sum += A[offset_a + idx_kkk + 3] * B[offset_b + idx_kkk + 3];
+                                        sum += A[offset_a + idx_kkk + 4] * B[offset_b + idx_kkk + 4];
+                                        sum += A[offset_a + idx_kkk + 5] * B[offset_b + idx_kkk + 5];
+                                        sum += A[offset_a + idx_kkk + 6] * B[offset_b + idx_kkk + 6];
+                                        sum += A[offset_a + idx_kkk + 7] * B[offset_b + idx_kkk + 7];
                                     }
                                     for (; idx_kkk < idx_kk + size_inner_tile && idx_kkk < k; idx_kkk++){
                                         sum += A[offset_a + idx_kkk] * B[offset_b +idx_kkk];
@@ -370,38 +374,22 @@ int main() {
 // ./main
 /*
 perf stat -e L1-dcache-loads,L1-dcache-load-misses,l2_rqsts.references,l2_rqsts.miss ./main
+
 matmul
-executing dot product matmul now with tile 128 ...
-Time spent on tiled matmul: 4.997170 seconds
-
- Performance counter stats for './main':
-
-       30932490400      L1-dcache-loads:u
-         175512901      L1-dcache-load-misses:u   #    0.57% of all L1-dcache accesses
-         327493694      l2_rqsts.references:u
-          46032171      l2_rqsts.miss:u
-
-       5.142546610 seconds time elapsed
-
-       5.141686000 seconds user
-       0.000000000 seconds sys
-
-       matmul
 executing l1 matmul now with tile 128 and inner tile 32 ...
-Time spent on l1 matmul: 4.681905 seconds
+Time spent on l1 matmul: 4.677510 seconds
 
  Performance counter stats for './main':
 
-       23223377266      L1-dcache-loads:u
-          64345036      L1-dcache-load-misses:u   #    0.28% of all L1-dcache accesses
-         126382774      l2_rqsts.references:u
-          18990080      l2_rqsts.miss:u
+       21718147654      L1-dcache-loads:u
+          18910847      L1-dcache-load-misses:u   #    0.09% of all L1-dcache accesses
+          36205262      l2_rqsts.references:u
+          14787220      l2_rqsts.miss:u
 
-       4.826988750 seconds time elapsed
+       4.815381895 seconds time elapsed
 
-       4.816960000 seconds user
-       0.010014000 seconds sys
-
+       4.805314000 seconds user
+       0.009990000 seconds sys
 
 
 */
