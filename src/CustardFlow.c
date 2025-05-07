@@ -5,11 +5,11 @@
 
 
 
-void naive_matmul(const float* A, const float *B, float * C, size_t rows_C, size_t cols_C, size_t rows_B_cols_A){
-    for (size_t i = 0; i < rows_C; i++ ){
-        for (size_t j = 0; j < cols_C; j++){
-            for (size_t k = 0; k < rows_B_cols_A; k++){            
-                C[i * cols_C + j] += A[i * rows_B_cols_A + k] * B[j * cols_C + k]; 
+void naive_matmul(const float* A, const float *B, float * C, size_t m, size_t n, size_t k, size_t lead_dim_a, size_t lead_dim_b, size_t lead_dim_c){
+    for (size_t i = 0; i < m; i++ ){
+        for (size_t j = 0; j < n; j++){
+            for (size_t k = 0; k < k; k++){            
+                C[i * lead_dim_c + j] += A[i * lead_dim_a + k] * B[j * lead_dim_b + k]; 
             }
         }
     }
@@ -153,6 +153,8 @@ void l1_tiled_matmul(const float * A, const float * B, float * C, size_t m, size
     }
 }
 
+void simd_matmul(const float * A, const float * B, float * C, size_t m, size_t n, size_t k, size_t m_tile){
 
+}
 
 

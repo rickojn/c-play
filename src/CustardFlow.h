@@ -9,7 +9,7 @@
 // Function declarations
 size_t min(size_t a, size_t b);
 
-void naive_matmul(const float *A, const float *B, float *C, size_t rows, size_t cols, size_t inner_dim);
+void naive_matmul(const float *A, const float *B, float *C, size_t m, size_t n, size_t k, size_t lead_dim_a, size_t lead_dim_b, size_t lead_dim_c);
 void outer_product_matmul(const float *A, const float *B, float *C, size_t rows, size_t cols, size_t inner_dim);
 void tiled_matmul(const float *A, const float *B, float *C, size_t rows, size_t cols, size_t inner_dim, size_t tile_size);
 void l1_tiled_matmul(const float *A, const float *B, float *C, size_t rows, size_t cols, size_t inner_dim, size_t tile_size, size_t inner_tile_size);

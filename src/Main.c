@@ -8,11 +8,11 @@
 #define K 784
 #define TILE 128
 #define INNER_TILE 32
-#define NAIVE 0
+#define NAIVE 1
 #define OUTER 0
 #define TILED 0
-#define L1 1
-#define ONLY_LARGE 1
+#define L1 0
+#define ONLY_LARGE 0
 
 
 
@@ -63,7 +63,7 @@ int main() {
         float A[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // row major
         float B[] = {1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4}; // column major
         float C[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-        naive_matmul(A, B, C, 4, 4, 4);
+        naive_matmul(A, B, C, 4, 4, 4, 4, 4, 4);
     
         for (size_t i = 0; i < 4; i++)
         {
@@ -160,7 +160,7 @@ int main() {
     {
         printf("Naive .. \n");
         start = clock();
-        naive_matmul(LA, LB, ref_C, M, N, K);
+        naive_matmul(LA, LB, ref_C, M, N, K, M, K, N);
         end = clock();
         time_spent = (double)(end - start) / CLOCKS_PER_SEC;
         printf("Time spent on matmul: %f seconds\n", time_spent);
