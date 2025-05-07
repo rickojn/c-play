@@ -10,7 +10,7 @@
 #define INNER_TILE 32
 #define NAIVE 1
 #define OUTER 0
-#define TILED 0
+#define TILED 1
 #define L1 0
 #define ONLY_LARGE 0
 
@@ -160,7 +160,7 @@ int main() {
     {
         printf("Naive .. \n");
         start = clock();
-        naive_matmul(LA, LB, ref_C, M, N, K, M, K, N);
+        naive_matmul(LA, LB, ref_C, M, N, K, K, K, N);
         end = clock();
         time_spent = (double)(end - start) / CLOCKS_PER_SEC;
         printf("Time spent on matmul: %f seconds\n", time_spent);

@@ -6,10 +6,10 @@
 
 
 void naive_matmul(const float* A, const float *B, float * C, size_t m, size_t n, size_t k, size_t lead_dim_a, size_t lead_dim_b, size_t lead_dim_c){
-    for (size_t i = 0; i < m; i++ ){
-        for (size_t j = 0; j < n; j++){
-            for (size_t k = 0; k < k; k++){            
-                C[i * lead_dim_c + j] += A[i * lead_dim_a + k] * B[j * lead_dim_b + k]; 
+    for (size_t idx_m = 0; idx_m < m; idx_m++ ){
+        for (size_t idx_n = 0; idx_n < n; idx_n++){
+            for (size_t idx_k = 0; idx_k < k; idx_k++){            
+                C[idx_m * lead_dim_c + idx_n] += A[idx_m * lead_dim_a + k] * B[idx_n * lead_dim_b + k]; 
             }
         }
     }
