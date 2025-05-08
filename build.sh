@@ -1,3 +1,3 @@
-gcc -c -o cf.o src/CustardFlow.c
-gcc -c -o main.o src/Main.c
-gcc -o build/mm cf.o main.o
+gcc -c -o build/ma.o src/mul-add.s
+gcc -c -o build/main.o src/Main.c
+gcc -o build/mamu  build/main.o build/ma.o
