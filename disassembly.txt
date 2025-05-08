@@ -1,0 +1,13 @@
+
+ma.o:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000000000 <simd_mul_add>:
+   0:	c5 fc 10 07          	vmovups (%rdi),%ymm0
+   4:	c5 fc 10 0e          	vmovups (%rsi),%ymm1
+   8:	c4 e2 7d b8 c1       	vfmadd231ps %ymm1,%ymm0,%ymm0
+   d:	c5 fc 11 07          	vmovups %ymm0,(%rdi)
+  11:	c5 f8 77             	vzeroupper 
+  14:	c3                   	retq   
